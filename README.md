@@ -1,2 +1,3 @@
-# labo-des-suites
-Le labo des suites - trouver la regle d'une suite
+# Suitopia
+
+Trouver la regle d'une suite : https://mappedinn.github.io/suitopia/
