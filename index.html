@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Le labo des suites</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Trebuchet MS",Verdana,sans-serif;background:#eaf4ff;color:#14213d;line-height:1.45}
+header{background:#27408b;color:#fff;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+header h1{font-size:1.25rem;margin:0;flex:1}
+main{max-width:960px;margin:0 auto;padding:12px}
+button{font:inherit;font-weight:bold;border:0;border-radius:12px;padding:9px 15px;background:#27408b;color:#fff;cursor:pointer;min-height:42px}
+button.alt{background:#fff;color:#27408b;box-shadow:inset 0 0 0 2px #27408b}
+button.on{background:#ffb703;color:#14213d;box-shadow:none}
+button:disabled{opacity:.4;cursor:default}
+.card{background:#fff;border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 3px 10px #0002}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.lvl{text-align:left;padding:18px;font-size:1.05rem}.lvl small{display:block;font-weight:normal;margin-top:6px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+input{font:inherit;font-size:1.15rem;padding:8px;border:2px solid #8aa;border-radius:10px;max-width:100%}
+input.num{width:80px;text-align:center}
+input.rule{flex:1;min-width:200px}
+.msg{padding:10px 12px;border-radius:10px;margin:8px 0;display:none}
+.msg.ok{display:block;background:#d8f3dc}.msg.no{display:block;background:#ffe3e0}.msg.tip{display:block;background:#fff3c4}
+.machine{max-width:460px;margin:auto}
+.pair{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;gap:8px;margin:6px 0}
+.box{border:3px solid #14213d;border-radius:8px;height:56px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:bold;background:#fff}
+.box input{width:100%;height:100%;border:0;text-align:center;font-weight:bold;background:#fff3c4}
+.lane{position:relative;height:62px}
+.lane:before{content:"";position:absolute;left:0;right:0;top:30px;border-top:3px dashed #8aa}
+.lane svg{position:absolute;left:50%;top:0;margin-left:-24px;width:48px;height:62px}
+.ball{position:absolute;top:18px;left:0;width:28px;height:28px;border-radius:50%;background:#ffb703;font-size:.8rem;font-weight:bold;display:flex;align-items:center;justify-content:center;opacity:0;z-index:2}
+.ball.out{left:calc(100% - 34px);background:#80ed99}
+.ball{width:34px!important;height:34px!important;top:14px!important;font-size:1rem!important;border:2px solid #14213d}
+.run .in{animation:enter 1.2s ease-in var(--d) both}
+.run .out{animation:leave 1.2s ease-out calc(var(--d) + 1.7s) both}
+.run svg{animation:shake .25s 4 calc(var(--d) + 1s)}
+.run+.box>span{animation:appear .3s calc(var(--d) + 2.9s) both}
+@keyframes enter{0%{left:0;opacity:0;transform:scale(1)}15%{left:0;opacity:1}80%{opacity:1}100%{left:calc(50% - 17px);opacity:0;transform:scale(.3)}}
+@keyframes leave{0%{left:calc(50% - 17px);opacity:0;transform:scale(.3)}20%{opacity:1}100%{left:calc(100% - 34px);opacity:1;transform:scale(1)}}
+@keyframes appear{from{opacity:0}to{opacity:1}}
+@keyframes shake{50%{transform:rotate(9deg)}}
+.happy{animation:jump .5s 3}
+@keyframes jump{50%{transform:translateY(-10px)}}
+@media (prefers-reduced-motion:reduce){.happy{animation:none!important}}
+.figs{display:flex;gap:18px;overflow-x:auto;align-items:flex-end;padding:8px 2px}
+.fig{text-align:center;flex:0 0 auto;margin:auto}
+.fig b{display:block;border:2px solid #14213d;border-radius:6px;padding:2px 22px;margin-top:6px}
+table{border-collapse:collapse;margin:8px 0;max-width:100%}
+td,th{border:2px solid #27408b;padding:5px 8px;text-align:center;min-width:48px}
+td input{width:62px;text-align:center}
+.build{display:grid;grid-template-columns:repeat(8,34px);gap:2px;overflow-x:auto;padding:4px 0}
+.cell{width:34px;height:34px;min-height:0;padding:0;border-radius:3px;border:1px dashed #789;background:#f7fbff}
+.boardwrap{overflow-x:auto;border:2px solid #27408b;border-radius:12px;background:#fff}
+#board{display:block;touch-action:none}
+.tool{background:#fff;box-shadow:inset 0 0 0 2px #aac;padding:4px;touch-action:none}
+.sw{width:42px;height:42px;border-radius:50%;border:4px solid #fff;box-shadow:0 0 0 1px #556;padding:0}
+.sw.on{box-shadow:0 0 0 4px #14213d}
+#modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+#modal>div{background:#fff;border-radius:14px;padding:14px;max-width:900px;max-height:100%;overflow:auto}
+#modal img{max-width:100%;border:1px solid #ccc}
+</style>
+</head>
+<body>
+<header><button class="alt" id="home">🏠 Accueil</button><h1>Le labo des suites</h1><span id="stars"></span></header>
+<main id="app"></main>
+<div id="modal"><div><p>Pour garder l’image : clic droit (ou appui long) sur l’image, puis « Enregistrer l’image ».</p><img id="shot" alt="Ma suite"><div class="row"><button id="close">Fermer</button></div></div></div>
+<script>
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), app=$('#app');
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
+let saved={};try{saved=JSON.parse(localStorage.getItem('suites')||'{}')}catch(e){}
+function total(){$('#stars').textContent='⭐ '+Object.values(saved).reduce((s,v)=>s+v,0)+' / 36'}
+
+const LEVELS=[null,
+ {nom:'Niveau 1 : La machine robot',desc:'Je commence : ajouter, puis multiplier',type:'robot',
+  ex:[[[1,1],[1,2],[1,3]],[[1,5],[1,4],[1,10]],[[2,0],[3,0],[10,0]]]},
+ {nom:'Niveau 2 : Le robot expert',desc:'Multiplier, puis additionner',type:'robot',
+  ex:[[[2,3],[3,1],[5,2]],[[2,5],[4,3],[3,4]],[[6,1],[5,7],[10,4]]]},
+ {nom:'Niveau 3 : Les blocs',desc:'Suites à deux couleurs',type:'blocs',
+  ex:[[[3,0],[3,2],[2,3]],[[2,1],[4,2],[3,4]],[[4,3],[5,2],[2,5]]]},
+ {nom:'Niveau 4 : Une seule couleur',desc:'Trouve ce qui change',type:'blocs',
+  ex:[[[2,4],[3,1],[4,2]],[[2,1],[3,3],[1,4]],[[4,1],[5,2],[3,5]]]}];
+
+/* Toutes les règles ont la forme a × n + b */
+function pool(l,m){const r=[],add=(a,b)=>r.push([a,b]);
+ if(l===1){if(m===0)for(let b=4;b<=10;b++)add(1,b);else if(m===1)for(let b=2;b<=15;b++)add(1,b);else[4,5,6,7,8,9,11].forEach(a=>add(a,0))}
+ else{const A=l===2?[[2,5],[2,6],[3,10]][m]:[[2,4],[2,4],[2,5]][m],B=l===2?[[1,5],[1,8],[2,12]][m]:l===3?[[0,3],[1,4],[1,5]][m]:[[1,3],[1,4],[1,5]][m];
+  for(let a=A[0];a<=A[1];a++)for(let b=B[0];b<=B[1];b++)add(a,b)}
+ const used=LEVELS[l].ex[m].map(String);return r.filter(x=>!used.includes(String(x)))}
+
+const op=(a,b,v)=>a===1?`${v} + ${b}`:b===0?`${v} × ${a}`:`${v} × ${a} + ${b}`;
+const varName=l=>l<3?'Entrée':'n';
+const ruleText=(l,[a,b])=>(l<3?'Sortie = ':'Nombre de tuiles = ')+op(a,b,l<3?'Entrée':'numéro de la figure');
+
+/* Lecture sécuritaire d’une règle écrite par l’élève (aucun eval) */
+function parseRule(txt){
+ let s=String(txt).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^.*=/,'')
+ .replace(/numero de (la )?figure|numero|entree|figure/g,'n').replace(/\s/g,'').replace(/[x×·]/g,'*').replace(/−/g,'-');
+ const t=s.match(/\d+|[n+\-*()]/g);if(!t||t.join('')!==s)return null;
+ let i=0,bad=false;
+ function sum(){let f=prod();while(t[i]==='+'||t[i]==='-'){const o=t[i++],a=f,c=prod();f=o==='+'?n=>a(n)+c(n):n=>a(n)-c(n)}return f}
+ function prod(){let f=atom();while(t[i]==='*'||t[i]==='n'||t[i]==='('){if(t[i]==='*')i++;const a=f,c=atom();f=n=>a(n)*c(n)}return f}
+ function atom(){const k=t[i++];if(k==='n')return n=>n;if(/^\d+$/.test(k||''))return()=>+k;if(k==='('){const f=sum();if(t[i++]!==')')bad=true;return f}bad=true;return()=>0}
+ const f=sum();return bad||i<t.length?null:f}
+const sameRule=(f,[a,b])=>[0,1,2,3,5,7,10,13].every(n=>f(n)===a*n+b);
+
+function say(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t.replace(/×/g,' fois ').replace(/\+/g,' plus ').replace(/=/g,' égale '));u.lang='fr-CA';u.rate=.9;speechSynthesis.speak(u)}catch(e){}}
+function consigne(t){const d=document.createElement('div');d.className='row';d.innerHTML='<button class="alt">🔊 Écouter</button><span style="flex:1;min-width:200px"></span>';d.lastChild.textContent=t;d.firstChild.onclick=()=>say(t);return d}
+function el(html,parent){const d=document.createElement('div');d.innerHTML=html;if(parent)parent.appendChild(d);return d}
+function note(box,cls,t){box.className='msg '+cls;box.textContent=t}
+function keys(input,v){const d=el('');d.className='row';[v,'+','−','×','(',')'].forEach(k=>{const b=document.createElement('button');b.className='alt';b.textContent=k;b.onclick=()=>{input.value+=(input.value?' ':'')+k;input.focus()};d.appendChild(b)});const c=document.createElement('button');c.className='alt';c.textContent='Effacer';c.onclick=()=>{input.value=''};d.appendChild(c);return d}
+
+const ROBOT='<svg viewBox="0 0 48 62" aria-label="robot"><path d="M24 10V3" stroke="#14213d" stroke-width="3"/><circle cx="24" cy="4" r="3" fill="#e63946"/><rect x="10" y="9" width="28" height="19" rx="7" fill="#4cc9f0" stroke="#14213d" stroke-width="2"/><circle cx="18" cy="18" r="3"/><circle cx="30" cy="18" r="3"/><rect x="7" y="30" width="34" height="23" rx="5" fill="#4361ee" stroke="#14213d" stroke-width="2"/><rect x="15" y="35" width="18" height="11" fill="#ffb703"/><path d="M15 54v7M33 54v7" stroke="#14213d" stroke-width="5"/></svg>';
+function machine(pairs){return '<div class="machine"><div class="pair"><b>Entrée</b><span></span><b>Sortie</b></div>'+pairs.map(([i,o])=>`<div class="pair"><div class="box">${i}</div><div class="lane"><span class="ball in">${i}</span>${ROBOT}<span class="ball out">${o===null?'?':o}</span></div><div class="box">${o===null?'<input class="answer" inputmode="numeric" aria-label="Sortie manquante">':`<span>${o}</span>`}</div></div>`).join('')+'</div>'}
+function animate(root){root.querySelectorAll('.lane').forEach((x,k,all)=>{x.classList.remove('run');x.parentNode.style.setProperty('--d',(all.length>1?k*3:0)+'s');void x.offsetWidth;x.classList.add('run')})}
+function replay(parent,root,before){const r=el('',parent);r.className='row';const b=document.createElement('button');b.className='alt';b.textContent='▶ Revoir le robot travailler';b.onclick=()=>animate(root);r.appendChild(b);if(before)parent.insertBefore(r,before)}
+
+/* Figures en tuiles */
+function tilesFor(l,m,[a,b],n){const T=[];
+ if(l===3){for(let r=0;r<n;r++)for(let c=0;c<a;c++)T.push({x:c-a/2,y:-r-1-(b?1:0),k:'g'});for(let c=0;c<b;c++)T.push({x:c-b/2,y:-1,k:'c'})}
+ else{for(let r=0;r<n;r++)for(let c=0;c<a;c++)T.push({x:c-a/2,y:r-n/2,k:'g'});
+  if(m<2){const h=n/2,w=a/2,pos=[[-.5,-h-1.35],[-.5,h+.35],[-w-1.35,-.5],[w+.35,-.5],[-.5,-h-2.75]];for(let i=0;i<b;i++)T.push({x:pos[i][0],y:pos[i][1],k:'c',d:true})}
+  else for(let c=0;c<b;c++)T.push({x:c-b/2,y:-n/2-1,k:'c'})}
+ return T}
+function figSVG(l,m,rule,n,show){const S=24,T=tilesFor(l,m,rule,n);
+ const xs=T.map(t=>t.x),ys=T.map(t=>t.y),x0=Math.min(...xs)-.3,y0=Math.min(...ys)-.3,w=Math.max(...xs)+1.3-x0,h=Math.max(...ys)+1.3-y0;
+ return `<svg width="${w*S}" height="${h*S}" viewBox="${x0*S} ${y0*S} ${w*S} ${h*S}">`+T.map(t=>{let col=l===3?(t.k==='g'?'#e63946':'#4895ef'):'#ffd60a';
+ if(show&&l===4)col=t.k==='g'?'#e63946':'#4895ef';const s=t.d?S*.85:S,o=(S-s)/2;
+ return `<rect x="${t.x*S+o}" y="${t.y*S+o}" width="${s}" height="${s}" fill="${col}" stroke="#14213d" stroke-width="2"${t.d?` transform="rotate(45 ${(t.x+.5)*S} ${(t.y+.5)*S})"`:''}/>`}).join('')+'</svg>'}
+const figures=(l,m,r,show)=>'<div class="figs">'+[1,2,3].map(n=>`<div class="fig">${figSVG(l,m,r,n,show)}<b>${n}</b></div>`).join('')+'</div>';
+
+function home(){app.innerHTML='';el('<div class="card"><h2>Bienvenue !</h2><p>Observe, trouve la règle et crée tes propres suites. Choisis où commencer.</p></div>',app);
+ const g=el('',app);g.className='grid';
+ LEVELS.slice(1).forEach((L,i)=>{const b=document.createElement('button');b.className='alt lvl';const s=[0,1,2].reduce((t,m)=>t+(saved[(i+1)+'-'+m]||0),0);b.innerHTML=`${L.nom}<small>${L.desc}<br>⭐ ${s} / 9</small>`;b.onclick=()=>level(i+1,0);g.appendChild(b)});
+ const b=document.createElement('button');b.className='lvl on';b.innerHTML='🎨 Atelier : Je crée ma suite<small>Des tuiles à déplacer et des défis</small>';b.onclick=atelier;g.appendChild(b);total()}
+
+function level(l,m){app.innerHTML='';el(`<h2>${LEVELS[l].nom}</h2>`,app);
+ const r=el('',app);r.className='row';[0,1,2].forEach(i=>{const b=document.createElement('button');b.className=i===m?'on':'alt';b.textContent=`Mission ${i+1} `+'⭐'.repeat(saved[l+'-'+i]||0);b.onclick=()=>level(l,i);r.appendChild(b)});
+ const tabs=el('',app);tabs.className='row';const zone=el('',app);
+ let list=shuffle(pool(l,m)).slice(0,7),first=0,done=new Set();
+ ['1. J’observe','2. On essaie','3. À moi'].forEach((t,i)=>{const b=document.createElement('button');b.className='alt';b.textContent=t;b.onclick=()=>go(i,0);tabs.appendChild(b)});
+ function go(phase,k){[...tabs.children].forEach((b,i)=>b.className=i===phase?'on':'alt');zone.innerHTML='';
+  if(phase===0)return observe(l,m,zone,k,()=>go(1,0));
+  const guided=phase===1,count=guided?2:5,idx=guided?k:2+k;
+  el(`<h3>${guided?'On essaie':'À moi'} : exercice ${k+1} de ${count}</h3>`,zone);
+  exercise(l,m,list[idx],guided,zone,perfect=>{
+   if(!guided&&!done.has(k)){done.add(k);if(perfect)first++}
+   const n=el('',zone);n.className='row';const b=document.createElement('button');n.appendChild(b);
+   if(k+1<count){b.textContent='Exercice suivant ➜';b.onclick=()=>go(phase,k+1)}
+   else if(guided){b.textContent='Je passe à « À moi » ➜';b.onclick=()=>go(2,0)}
+   else if(done.size===5){const s=first>=4?3:first>=2?2:1;saved[l+'-'+m]=Math.max(s,saved[l+'-'+m]||0);try{localStorage.setItem('suites',JSON.stringify(saved))}catch(e){}total();
+    el(`<div class="msg ok">🎉 Mission terminée ! ${'⭐'.repeat(s)}<br>${first} exercice(s) sur 5 réussis du premier coup.</div>`,zone);
+    b.textContent='Rejouer avec de nouveaux nombres';b.onclick=()=>level(l,m)}
+   else{b.textContent='Faire les exercices manqués';b.onclick=()=>go(2,[0,1,2,3,4].find(i=>!done.has(i)))}
+  })}
+ go(0,0)}
+
+function observe(l,m,zone,k,next){zone.innerHTML='';const rule=LEVELS[l].ex[m][k],[a,b]=rule;let step=0;
+ el(`<h3>Exemple ${k+1} de 3</h3>`,zone);const view=el('',zone),txt=el('',zone),nav=el('',zone);nav.className='row';
+ let steps,pairs;
+ if(l<3){const ins=l===1?(m===1?[[2,5,8],[6,1,4],[7,3,10]][k]:m===0?[1,2,3]:[2,3,5]):l===2&&k===1?[6,4,0]:[[6,4,9],[2,5,7],[3,8,4]][k];pairs=ins.map(i=>[i,a*i+b]);view.className='card';view.innerHTML=machine(pairs);replay(view,view);animate(view);
+  const [i,o]=pairs[0],[j,p]=pairs[1];
+  if(l===1)steps=['Observe chaque nombre qui entre dans le robot et le nombre qui sort.',
+   `Regarde la première paire : ${i} devient ${o}. J’essaie une opération.`,
+   a===1?`Je pense à + ${b}, car ${i} + ${b} = ${o}.`:`Je pense à × ${a}, car ${i} × ${a} = ${o}.`,
+   'Je vérifie les autres paires : '+pairs.slice(1).map(([x,y])=>`${op(a,b,x)} = ${y}`).join(' et ')+'.',
+   'Ma règle est : '+ruleText(l,rule)];
+  else steps=['Observe les trois paires. Une seule opération ne suffit pas.',
+   `Je compare les entrées ${Math.min(i,j)} et ${Math.max(i,j)}. L’entrée augmente de ${Math.abs(i-j)} et la sortie augmente de ${Math.abs(o-p)}.`,
+   `Quand l’entrée augmente de 1, la sortie augmente de ${a}. Je multiplie donc par ${a}.`,
+   `${i} × ${a} = ${i*a}, mais le robot donne ${o}. Il faut ajouter ${b}.`,
+   'Je vérifie toutes les paires : '+pairs.map(([x,y])=>`${op(a,b,x)} = ${y}`).join(' ; ')+'.',
+   'Ma règle est : '+ruleText(l,rule)]}
+ else{view.className='card';
+  steps=['Observe les figures 1, 2 et 3.',
+   `Je compte les tuiles : ${[1,2,3].map(n=>a*n+b).join(', ')}.`,
+   `D’une figure à la suivante, j’ajoute ${a} tuile(s). C’est la partie qui augmente${l===3?' (en rouge)':' (maintenant en rouge)'}.`,
+   b?`La partie constante a toujours ${b} tuile(s)${l===3?' (en bleu)':' (maintenant en bleu)'}.`:'Ici, il n’y a pas de partie constante.',
+   'Ma règle est : '+ruleText(l,rule),
+   `À la figure 10 : ${op(a,b,10)} = ${a*10+b} tuiles.`]}
+ function draw(){if(l>2){const t=step>0;view.innerHTML=figures(l,m,rule,step>=2)+(t?'<table><tr><th>Figure</th><td>1</td><td>2</td><td>3</td></tr><tr><th>Tuiles</th>'+[1,2,3].map(n=>`<td>${a*n+b}</td>`).join('')+'</tr></table>':'')}
+  txt.innerHTML='';const c=consigne(steps[step]);c.className='row msg tip';c.style.display='flex';txt.appendChild(c);
+  nav.innerHTML='';const mk=(t,f,cls)=>{const x=document.createElement('button');x.textContent=t;x.className=cls||'';x.onclick=f;nav.appendChild(x)};
+  mk('↺ Revoir',()=>{step=0;draw();if(l<3)animate(view)},'alt');
+  if(step<steps.length-1)mk('Suivant ➜',()=>{step++;draw();if(l<3&&step===3)animate(view)});
+  else if(k<2)mk('Exemple suivant ➜',()=>observe(l,m,zone,k+1,next));else mk('On essaie ➜',next)}
+ draw()}
+
+function exercise(l,m,rule,guided,zone,finish){const [a,b]=rule;let tries=0,helps=0,hint=0,over=false;
+ const card=el('',zone);card.className='card';
+ const hints=l<3?['Compare chaque entrée à sa sortie. La même règle fonctionne pour toutes les paires.',
+   l===1?'La sortie augmente-t-elle toujours du même nombre ? Sinon, pense à la multiplication.':'Compare deux entrées. Quand l’entrée augmente de 1, de combien augmente la sortie ? C’est le nombre qui multiplie.',
+   l===1?'Teste ton opération sur la première paire, puis sur les deux autres.':'Multiplie une entrée par ton nombre. Que faut-il ajouter pour obtenir la sortie ?']
+  :['Compte les tuiles de chaque figure. Qu’est-ce qui reste pareil ?','De combien de tuiles la figure grandit-elle chaque fois ? C’est le nombre qui multiplie le numéro de la figure.','Multiplie ce nombre par 1. Combien de tuiles manque-t-il pour faire la figure 1 ?'];
+ if(l===1)hints.splice(0,3,'Regarde une ligne : le nombre à gauche devient le nombre à droite. Que fait le robot ?',m<2?'Compte combien il faut ajouter pour passer de l’entrée à la sortie.':'Pense aux tables de multiplication.','Vérifie que la même action fonctionne sur les trois lignes.');
+ const help=el('');help.className='msg';
+ const hb=document.createElement('button');hb.className='alt';hb.textContent='💡 Indice';hb.onclick=()=>{note(help,'tip',hints[Math.min(hint,2)]);hint++;if(!guided)helps++};
+ const cheer=['Bravo !','Excellent travail !','Super raisonnement !','Tu as trouvé !'];
+ const win=()=>cheer[rnd(0,3)];
+ function ruleBlock(parent,onOk){const d=el(`<p><b>Ma règle est :</b></p><div class="row"><span>${l<3?'Sortie =':'Tuiles ='}</span><input class="rule" placeholder="Écris ta règle avec ${varName(l)}" aria-label="Ma règle"></div>`,parent),inp=$('input',d);
+  if(l>2)el('<small>n = numéro de la figure</small>',d);
+  d.appendChild(keys(inp,varName(l)));const msg=el('',d);msg.className='msg';
+  return{input:inp,msg,block:d,check(){const f=parseRule(inp.value);if(!f){note(msg,'no',`Je ne comprends pas encore cette règle. Utilise ${varName(l)}, des nombres, + et ×.`);return null}return f}}}
+ function simpleBlock(parent){const d=el('<p><b>Le robot fait :</b></p><div class="row"></div><div class="row"><span>Quel nombre ?</span><input class="num act" inputmode="numeric" aria-label="Nombre utilisé par le robot"></div>',parent),msg=el('',d);msg.className='msg';let o='';
+  [['+','+ (il ajoute)'],['×','× (il multiplie)']].forEach(([v,t])=>{const b=document.createElement('button');b.className='alt';b.textContent=t;b.onclick=()=>{o=v;[...b.parentNode.children].forEach(x=>x.className=x===b?'on':'alt')};$('.row',d).appendChild(b)});
+  return{msg,check(){const n=$('.act',d).value.trim();if(!o||!/^\d+$/.test(n)){note(msg,'no','Choisis + ou ×, puis écris un nombre.');return null}return parseRule('n'+o+n)}}}
+ if(l<3){const nums=shuffle([1,2,3,4,5,6,7,8,9,10,11,12]);let ins=nums.slice(0,4);if(l===1&&m===0)ins=[1,2,3,4].map((v,i)=>v+(i===3?rnd(0,2):0));if(l===1&&m===2)ins=shuffle([1,2,3,4,5,6]).slice(0,4);if(l===2&&Math.random()<.5)ins[rnd(0,2)]=0;
+  const pairs=ins.map((i,k)=>[i,k<3?a*i+b:null]);
+  card.appendChild(consigne(l===1?'Que fait le robot ? Choisis son action, puis trouve la sortie qui manque.':'Trouve la règle du robot. Écris la sortie manquante et ta règle.'));const mach=el(machine(pairs),card);replay(card,mach);animate(mach);
+  const R=l===1?simpleBlock(card):ruleBlock(card),row=el('',card);row.className='row';const ok=document.createElement('button');ok.textContent='✔ Vérifier';row.append(ok,hb);card.appendChild(help);
+  ok.onclick=()=>{if(over)return;const f=R.check();if(!f)return;const out=$('.answer',card);if(out.value.trim()===''){note(R.msg,'no','Écris aussi la sortie manquante.');return}
+   const miss=ins.slice(0,3).find(i=>f(i)!==a*i+b);
+   if(miss!==undefined){tries++;note(R.msg,'no',`Testons ta règle avec l’entrée ${miss} : elle donne ${f(miss)}, mais le robot donne ${a*miss+b}. Essaie encore !`);return}
+   if(!sameRule(f,rule)){tries++;note(R.msg,'no','Ta règle ne fonctionne pas pour toutes les entrées. Essaie une règle plus simple.');return}
+   if(+out.value!==a*ins[3]+b){tries++;note(R.msg,'no',`Ta règle est bonne ! Applique-la à l’entrée ${ins[3]} pour corriger la sortie.`);return}
+   over=true;ok.disabled=true;note(R.msg,'ok',`${win()} ${ruleText(l,rule)}`);const last=card.querySelectorAll('.lane')[3];$('.ball.out',last).textContent=out.value;last.classList.remove('run');last.parentNode.style.setProperty('--d','0s');void last.offsetWidth;last.classList.add('run');finish(tries===0&&helps===0)};
+ }else{
+  const view=el(figures(l,m,rule,false),card);
+  card.insertBefore(consigne('Étape 1 : construis la figure 4. Choisis une couleur, puis clique sur les cases. Clique encore pour retirer une tuile.'),view);
+  const cols=l===3?(b?[['rouge','#e63946'],['bleu','#4895ef']]:[['rouge','#e63946']]):[['jaune','#ffd60a']];let cur=0;
+  const pal=el('',card);pal.className='row';cols.forEach(([n,c],i)=>{const x=document.createElement('button');x.className='sw'+(i?'':' on');x.style.background=c;x.title=n;x.setAttribute('aria-label','Tuile '+n);x.onclick=()=>{cur=i;[...pal.children].forEach((y,j)=>y.classList.toggle('on',i===j))};pal.appendChild(x)});
+  const counter=el('Tuiles placées : 0',card),g=el('',card);g.className='build';const cells=[];
+  for(let i=0;i<48;i++){const c=document.createElement('button');c.className='cell';c.setAttribute('aria-label','Case '+(i+1));c.onclick=()=>{const v=String(cur);if(c.dataset.v===v){delete c.dataset.v;c.style.background=''}else{c.dataset.v=v;c.style.background=cols[cur][1]}counter.textContent='Tuiles placées : '+cells.filter(x=>x.dataset.v!==undefined).length};cells.push(c);g.appendChild(c)}
+  const m1=el('',card);m1.className='msg';const r1=el('',card);r1.className='row';const b1=document.createElement('button');b1.textContent='✔ Vérifier ma figure';r1.appendChild(b1);
+  const s2=el('',card);s2.hidden=true;
+  b1.onclick=()=>{const n=i=>cells.filter(c=>c.dataset.v===String(i)).length;
+   const good=l===3?n(0)===4*a&&(b?n(1)===b:true):n(0)===a*4+b;
+   if(good){note(m1,'ok',win()+' La figure 4 a le bon nombre de tuiles.');b1.disabled=true;s2.hidden=false}
+   else{tries++;note(m1,'no',l===3?'Observe chaque couleur séparément. Laquelle change ? De combien ?':'Compte les tuiles des figures 1, 2 et 3. De combien le total augmente-t-il ?')}};
+  s2.appendChild(consigne('Étape 2 : remplis la table de valeurs.'));
+  el('<table><tr><th>Figure</th><td>1</td><td>2</td><td>3</td><td>4</td></tr><tr><th>Tuiles</th>'+[1,2,3,4].map(n=>`<td><input class="tv" inputmode="numeric" aria-label="Tuiles de la figure ${n}"></td>`).join('')+'</tr></table>',s2).style.overflowX='auto';
+  const m2=el('',s2);m2.className='msg';const b2=document.createElement('button');b2.textContent='✔ Vérifier la table';s2.appendChild(b2);
+  const s3=el('',card);s3.hidden=true;
+  b2.onclick=()=>{const bad=[...s2.querySelectorAll('.tv')].map((x,i)=>+x.value===a*(i+1)+b?0:i+1).filter(Boolean);
+   if(bad.length){tries++;note(m2,'no','Recompte pour la figure '+bad.join(', ')+'.')}else{note(m2,'ok','La table est exacte.');b2.disabled=true;s3.hidden=false}};
+  s3.appendChild(consigne('Étape 3 : trouve la règle, puis prédis le nombre de tuiles à la figure 10.'));
+  const R=ruleBlock(s3);const p=el('<div class="row">Figure 10 : <input class="num" inputmode="numeric" aria-label="Tuiles à la figure 10"> tuiles</div>',s3),ten=$('input',p);
+  s3.appendChild(R.msg);const r3=el('',s3);r3.className='row';const b3=document.createElement('button');b3.textContent='✔ Vérifier';r3.appendChild(b3);
+  const hr=el('',card);hr.className='row';hr.appendChild(hb);card.appendChild(help);
+  b3.onclick=()=>{if(over)return;const f=R.check();if(!f)return;
+   const miss=[1,2,3,4].find(n=>f(n)!==a*n+b);
+   if(miss){tries++;note(R.msg,'no',`Testons ta règle à la figure ${miss} : elle donne ${f(miss)} tuiles, mais il y en a ${a*miss+b}.`);return}
+   if(!sameRule(f,rule)){tries++;note(R.msg,'no','Ta règle fonctionne au début, mais pas pour toutes les figures.');return}
+   if(+ten.value!==10*a+b){tries++;note(R.msg,'no','Ta règle est bonne ! Remplace n par 10 pour la figure 10.');return}
+   over=true;b3.disabled=true;note(R.msg,'ok',`${win()} ${ruleText(l,rule)}`);
+   const sm=document.createElement('button');sm.className='on';sm.textContent='👀 Montre-moi';r3.appendChild(sm);
+   sm.onclick=()=>{view.innerHTML=figures(l,m,rule,true)+`<div class="msg tip">En rouge : la partie qui augmente (+ ${a} par figure). ${b?`En bleu : la partie constante (${b}).`:'Il n’y a pas de partie constante.'}</div>`;view.scrollIntoView({behavior:'smooth',block:'center'})};
+   finish(tries===0&&helps===0)};
+ }
+ if(guided){note(help,'tip',hints[0]);hint=1}
+}
+
+/* ---------- Atelier ---------- */
+const COLORS=['#e63946','#4895ef','#ffd60a','#52b788','#9d4edd'],SHAPES=['carré','losange','triangle','cercle'];
+let work={tiles:[],zones:3};
+function shapeSVG(s,c,x,y,rot){const st=`fill="${c}" stroke="#14213d" stroke-width="2"`;
+ const body=s==='carré'?`<rect x="-20" y="-20" width="40" height="40" ${st}/>`:s==='losange'?`<polygon points="0,-28 28,0 0,28 -28,0" ${st}/>`:s==='triangle'?`<polygon points="0,-20 20,20 -20,20" ${st}/>`:`<circle r="20" ${st}/>`;
+ return `<g transform="translate(${x} ${y}) rotate(${rot})">${body}</g>`}
+function atelier(){app.innerHTML='';const ZW=240,H=360;let color=0,sel=null,active=0,history=[],challenge=false;
+ el('<h2>🎨 Atelier : Je crée ma suite</h2>',app);const card=el('',app);card.className='card';
+ card.appendChild(consigne('Choisis une couleur. Glisse une forme sur le tableau, ou clique sur la forme pour l’ajouter à la figure choisie.'));
+ const edit=el('',card),cp=el('',edit),sp=el('',edit),tools=el('',edit);cp.className=sp.className=tools.className='row';
+ const wrap=el('',card);wrap.className='boardwrap';const info=el('',card),m=el('',card);m.className='msg';
+ const snapshot=()=>{history.push(JSON.stringify(work));if(history.length>60)history.shift()};
+ COLORS.forEach((c,i)=>{const b=document.createElement('button');b.className='sw'+(i?'':' on');b.style.background=c;b.setAttribute('aria-label','Couleur '+(i+1));b.onclick=()=>{color=i;[...cp.children].forEach((y,j)=>y.classList.toggle('on',i===j));palette();if(sel){snapshot();sel.c=c;draw()}};cp.appendChild(b)});
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),snap=v=>Math.round(v/20)*20;
+ function place(s,x,y){snapshot();sel={s,c:COLORS[color],x:clamp(snap(x),20,work.zones*ZW-20),y:clamp(snap(y),40,H-60),r:0};work.tiles.push(sel);active=Math.floor(sel.x/ZW);draw()}
+ function point(e){const r=$('#board').getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+ function palette(){sp.innerHTML='';SHAPES.forEach(s=>{const b=document.createElement('button');b.className='tool';b.setAttribute('aria-label',s);b.title=s;b.innerHTML=`<svg width="58" height="58" viewBox="-30 -30 60 60">${shapeSVG(s,COLORS[color],0,0,0)}</svg>`;
+  b.onpointerdown=e=>{const sx=e.clientX,sy=e.clientY;
+   const up=ev=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel);
+    const w=wrap.getBoundingClientRect();
+    if(Math.hypot(ev.clientX-sx,ev.clientY-sy)<10){const used=work.tiles.filter(t=>Math.floor(t.x/ZW)===active);let spot=null;for(let y=80;y<=260&&!spot;y+=60)for(let x=60;x<=180&&!spot;x+=60){const X=active*ZW+x;if(!used.some(t=>Math.abs(t.x-X)<60&&Math.abs(t.y-y)<60))spot=[X,y]}spot=spot||[active*ZW+120,180];place(s,spot[0],spot[1])}
+    else if(ev.clientX>=w.left&&ev.clientX<=w.right&&ev.clientY>=w.top&&ev.clientY<=w.bottom){const p=point(ev);place(s,p.x,p.y)}};
+   const cancel=()=>{window.removeEventListener('pointerup',up);window.removeEventListener('pointercancel',cancel)};
+   window.addEventListener('pointerup',up);window.addEventListener('pointercancel',cancel)};
+  b.onclick=e=>{if(e.detail===0)place(s,active*ZW+120,180)};sp.appendChild(b)})}
+ function btn(t,f,parent){const b=document.createElement('button');b.className='alt';b.textContent=t;b.onclick=f;parent.appendChild(b);return b}
+ const need=()=>{if(!sel)note(m,'tip','Clique d’abord sur une tuile du tableau.');return !!sel};
+ btn('⟳ Pivoter',()=>{if(need()){snapshot();sel.r=(sel.r+45)%360;draw()}},tools);
+ btn('⧉ Dupliquer',()=>{if(need()){snapshot();sel={...sel,x:clamp(sel.x+40,20,work.zones*ZW-20)};work.tiles.push(sel);draw()}},tools);
+ const del=()=>{if(need()){snapshot();work.tiles=work.tiles.filter(t=>t!==sel);sel=null;draw()}};
+ btn('🗑 Effacer la tuile',del,tools);
+ btn('↶ Annuler',()=>{if(history.length){work=JSON.parse(history.pop());sel=null;active=Math.min(active,work.zones-1);draw()}},tools);
+ btn('Copier la figure précédente',()=>{if(!active){note(m,'tip','Choisis d’abord la figure 2 ou une figure suivante.');return}if(work.tiles.some(t=>Math.floor(t.x/ZW)===active))note(m,'tip','La figure a été remplacée. « Annuler » permet de revenir.');snapshot();work.tiles=work.tiles.filter(t=>Math.floor(t.x/ZW)!==active).concat(work.tiles.filter(t=>Math.floor(t.x/ZW)===active-1).map(t=>({...t,x:t.x+ZW})));sel=null;draw()},tools);
+ btn('+ Figure',()=>{if(work.zones<6){snapshot();work.zones++;active=work.zones-1;draw()}},tools);
+ btn('Vider la figure',()=>{snapshot();work.tiles=work.tiles.filter(t=>Math.floor(t.x/ZW)!==active);sel=null;draw()},tools);
+ function counts(){const c=Array.from({length:work.zones},(_,i)=>work.tiles.filter(t=>Math.floor(t.x/ZW)===i).length);while(c.length&&!c[c.length-1])c.pop();return c}
+ function boardSVG(clean){const W=work.zones*ZW;let s=`<svg xmlns="http://www.w3.org/2000/svg" id="board" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff"/>`;
+  for(let i=0;i<work.zones;i++)s+=`<rect data-z="${i}" x="${i*ZW+3}" y="3" width="${ZW-6}" height="${H-6}" rx="10" fill="${!clean&&i===active?'#fff8dc':'#f7fbff'}" stroke="#8aa" stroke-width="2"/><text x="${i*ZW+ZW/2}" y="${H-14}" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" pointer-events="none">Figure ${i+1}</text>`;
+  work.tiles.forEach((t,i)=>{s+=shapeSVG(t.s,t.c,t.x,t.y,t.r).replace('<g ',`<g data-i="${i}" style="cursor:grab" `);if(!clean&&t===sel)s+=`<circle cx="${t.x}" cy="${t.y}" r="31" fill="none" stroke="#14213d" stroke-width="2" stroke-dasharray="5 4" pointer-events="none"/>`});
+  return s+'</svg>'}
+ function draw(){const left=wrap.scrollLeft;wrap.innerHTML=boardSVG(false);wrap.scrollLeft=left;table();
+  const svg=$('#board');svg.onpointerdown=e=>{if(challenge)return;const g=e.target.closest('[data-i]');
+   if(!g){const z=e.target.getAttribute('data-z');if(z!==null){active=+z;sel=null;draw()}return}
+   e.preventDefault();const t=work.tiles[+g.dataset.i],p=point(e),dx=t.x-p.x,dy=t.y-p.y,before=JSON.stringify(work);let moved=false;sel=t;active=Math.floor(t.x/ZW);
+   const move=ev=>{const q=point(ev),x=clamp(snap(q.x+dx),20,work.zones*ZW-20),y=clamp(snap(q.y+dy),40,H-60);if(x!==t.x||y!==t.y){moved=true;t.x=x;t.y=y;g.setAttribute('transform',`translate(${x} ${y}) rotate(${t.r})`)}};
+   const end=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',end);window.removeEventListener('pointercancel',end);if(moved)history.push(before);active=Math.floor(t.x/ZW);draw()};
+   window.addEventListener('pointermove',move);window.addEventListener('pointerup',end);window.addEventListener('pointercancel',end)}}
+ function table(){const c=counts();info.style.overflowX='auto';info.innerHTML=challenge||!c.length?'':'<table><tr><th>Figure</th>'+c.map((_,i)=>`<td>${i+1}</td>`).join('')+'</tr><tr><th>Tuiles</th>'+c.map(v=>`<td>${v}</td>`).join('')+'</tr></table>'}
+ const rz=el('<p><b>La règle de la suite :</b></p><div class="row"><span>Tuiles =</span><input class="rule" placeholder="Écris la règle avec n" aria-label="Règle de la suite"></div><small>n = numéro de la figure</small>',card),inp=$('input',rz);
+ rz.appendChild(keys(inp,'n'));card.appendChild(m);const act=el('',card);act.className='row';
+ btn('✔ Vérifier la règle',()=>{const c=counts();if(c.length<2||c.includes(0)){note(m,'no','Construis au moins 2 figures qui se suivent à partir de la figure 1.');return}
+  const f=parseRule(inp.value);if(!f){note(m,'no','Écris la règle avec n, des nombres, + et ×.');return}
+  const d=c.slice(1).map((v,i)=>v-c[i]),reg=d.every(v=>v===d[0]);
+  const growth=c.length<3?'Ajoute une 3e figure pour vérifier si la croissance est régulière.':reg&&d[0]>0?`Ta suite est à croissance régulière : + ${d[0]} par figure.`:'Ta suite n’est pas à croissance régulière.';
+  const k=c.findIndex((v,i)=>f(i+1)!==v);
+  note(m,k<0?'ok':'no',(k<0?'🎉 La règle fonctionne pour toutes les figures construites ! ':`À la figure ${k+1}, la règle donne ${f(k+1)}, mais il y a ${c[k]} tuiles. `)+growth)},act);
+ const ch=btn('🕵️ Mode défi',()=>{const c=counts();if(!challenge&&(c.length<2||c.includes(0))){note(m,'no','Construis au moins 2 figures avant de lancer un défi.');return}
+  challenge=!challenge;sel=null;edit.hidden=challenge;inp.value='';ch.textContent=challenge?'✏️ Quitter le défi':'🕵️ Mode défi';draw();m.className='msg';if(challenge)note(m,'tip','Défi lancé ! Passe l’appareil à ton camarade : il doit trouver la règle.')},act);
+ btn('🖼 Voir mon image',()=>{const keep=sel;sel=null;const svg=boardSVG(true),img=new Image();sel=keep;
+  img.onload=()=>{const c=document.createElement('canvas');c.width=work.zones*ZW;c.height=H;c.getContext('2d').drawImage(img,0,0);$('#shot').src=c.toDataURL('image/png');$('#modal').style.display='flex'};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)},act);
+ document.onkeydown=e=>{if(!challenge&&sel&&$('#board')&&e.target.tagName!=='INPUT'&&(e.key==='Delete'||e.key==='Backspace')){e.preventDefault();del()}};
+ palette();draw()}
+$('#home').onclick=home;$('#close').onclick=()=>$('#modal').style.display='none';
+home();
+</script>
+</body>
+</html>
