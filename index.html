@@ -131,8 +131,10 @@ const LEVELS=[null,
   ex:[[[2,4],[3,1],[4,2]],[[2,1],[3,3],[1,4]],[[4,1],[5,2],[3,5]],[[3,2],[2,1],[4,3]]]}];
 
 /* Toutes les règles ont la forme a × n + b */
-const TYPE=['find','find','find','table','find','table','inv','find','inv','find'];
-const NOMS={find:'🔍 Trouve la règle',table:'📋 Remplis le tableau',inv:'🔄 Trouve le nombre de départ'},ICONE={find:'🔍',table:'📋',inv:'🔄'};
+const TYPE=['find','find','find','table','find','table','pred','find','pred','find'];
+const NOMS={find:'🔍 Trouve la règle',table:'📋 Remplis le tableau',pred:'🔭 Prédis la sortie'},ICONE={find:'🔍',table:'📋',pred:'🔭'};
+/* Prédictions : l’entrée est toujours donnée, plus loin dans la suite */
+const PRED={6:{exemple:[11,12,15,20,30],choix:[11,12,14,15,16,18,20,25,30]},8:{exemple:[20,25,40,50,100],choix:[20,24,25,30,35,40,50,60,75,100]}};
 function pool(l,m){const r=[],add=(a,b)=>r.push([a,b]);
  const T=TYPE[m],add1=(x,y)=>{for(let v=x;v<=y;v++)add(1,v)},fois1=(x,y)=>{for(let v=x;v<=y;v++)add(v,0)},grid=(A,B)=>{for(let x=A[0];x<=A[1];x++)for(let y=B[0];y<=B[1];y++)add(x,y)};
  if(T!=='find'){const dur=m===5||m===8;if(l===1){add1(dur?10:2,dur?30:12);fois1(dur?5:2,dur?12:10)}else if(l===2)grid(dur?[3,9]:[2,6],dur?[3,15]:[1,9]);else grid(dur?[3,9]:[2,5],dur?[2,12]:[1,5])}
@@ -148,7 +150,7 @@ const varName=l=>l<3?'Entrée':'n';
 const ruleText=(l,[a,b])=>(l<3?'Sortie = ':'Nombre de tuiles = ')+op(a,b,l<3?'Entrée':'numéro de la figure');
 
 /* Les exemples des missions 5 à 10 sont tirés de leur propre bassin, toujours les mêmes */
-for(let l=1;l<=4;l++)for(let m=4;m<10;m++){const P=pool(l,m);LEVELS[l].ex[m]=(TYPE[m]==="inv"?[.05,.38,.72]:[.15,.5,.85]).map(f=>P[Math.floor(P.length*f)])}
+for(let l=1;l<=4;l++)for(let m=4;m<10;m++){const P=pool(l,m);LEVELS[l].ex[m]=[.15,.5,.85].map(f=>P[Math.floor(P.length*f)])}
 
 /* Lecture sécuritaire d’une règle écrite par l’élève (aucun eval) */
 function parseRule(txt){
@@ -282,30 +284,26 @@ const shownRule=(l,[a,b])=>(l<3?'Sortie = ':'Tuiles = ')+op(a,b,l<3?'Entrée':'n
 const ruleCard=(l,r)=>`<div class="rulecard">${l<3?ROBOT:''}<div><small>La règle est :</small><br><b>${shownRule(l,r)}</b>${l>2?'<br><small>n = numéro de la figure</small>':''}</div></div>`;
 const valueTable=(l,cols,cell)=>`<div style="overflow-x:auto"><table><tr><th>${heads(l)[0]}</th>${cols.map(c=>`<td>${c}</td>`).join('')}</tr><tr><th>${heads(l)[1]}</th>${cols.map((c,i)=>`<td>${cell(c,i)}</td>`).join('')}</tr></table></div>`;
 const calc=([a,b],v)=>op(a,b,v);
-const undo=([a,b],y)=>a===1?`${y} − ${b} = ${y-b}`:b?`${y} − ${b} = ${y-b}, puis ${y-b} ÷ ${a} = ${(y-b)/a}`:`${y} ÷ ${a} = ${y/a}`;
-const invTable=(l,cols,[a,b],cell)=>`<div style="overflow-x:auto"><table><tr><th>${heads(l)[0]}</th>${cols.map((c,i)=>`<td>${cell(c,i)}</td>`).join('')}</tr><tr><th>${heads(l)[1]}</th>${cols.map(c=>`<td>${a*c+b}</td>`).join('')}</tr></table></div>`;
-
-function observeTable(l,m,zone,k,next){zone.innerHTML='';const inv=TYPE[m]==='inv',rule=LEVELS[l].ex[m][k],[a,b]=rule,cols=l<3?[1,2,3,5,10]:l===3?[1,2,3,4,10]:[1,3,5,10,20];let step=0;
+function observeTable(l,m,zone,k,next){zone.innerHTML='';const pred=TYPE[m]==='pred',rule=LEVELS[l].ex[m][k],[a,b]=rule,cols=pred?PRED[m].exemple:l<3?[1,2,3,5,10]:l===3?[1,2,3,4,10]:[1,3,5,10,20];let step=0;
  el(`<h3>Exemple ${k+1} de 3</h3>`,zone);const view=el('',zone),txt=el('',zone),nav=el('',zone);view.className='card';nav.className='row';
- function draw(){view.innerHTML=ruleCard(l,rule)+(inv?invTable(l,cols,rule,(c,i)=>i<step?`<b>${c}</b>`:'?'):valueTable(l,cols,(c,i)=>i<step?`<b>${a*c+b}</b>`:'?'));
-  const c=cols[step-1];const t=inv?(step===0?'Je connais le résultat. Je travaille à l’envers : '+(b?'j’enlève le nombre ajouté'+(a>1?', puis je divise.':'.'):'je divise.'):`Pour ${a*c+b} : ${undo(rule,a*c+b)}. Je vérifie : ${calc(rule,c)} = ${a*c+b}.`):step===0?'Je lis la règle. Pour chaque colonne, je remplace '+(l<3?'« Entrée »':'n')+' par le nombre du haut.':`Pour ${c} : ${calc(rule,c)} = ${a*c+b}.`+(a>1&&b?' Je multiplie avant d’additionner.':'');
+ function draw(){view.innerHTML=ruleCard(l,rule)+valueTable(l,cols,(c,i)=>i<step?`<b>${a*c+b}</b>`:'?');
+  const c=cols[step-1];const t=step===0?(pred?'Je prédis plus loin dans la suite. Pas besoin de calculer toutes les colonnes avant : je remplace '+(l<3?'« Entrée »':'n')+' par le nombre du haut.':'Je lis la règle. Pour chaque colonne, je remplace '+(l<3?'« Entrée »':'n')+' par le nombre du haut.'):`Pour ${c} : ${calc(rule,c)} = ${a*c+b}.`+(a>1&&b?' Je multiplie avant d’additionner.':'');
   txt.innerHTML='';const x=consigne(t);x.className='row msg tip';x.style.display='flex';txt.appendChild(x);nav.innerHTML='';
   const mk=(label,f,cls)=>{const y=document.createElement('button');y.textContent=label;y.onclick=f;y.className=cls||'';nav.appendChild(y)};
   mk('↺ Revoir',()=>{step=0;draw()},'alt');
   if(step<cols.length)mk('Suivant ➜',()=>{step++;draw()});else if(k<2)mk('Exemple suivant ➜',()=>observeTable(l,m,zone,k+1,next));else mk('On essaie ➜',next)}
  draw()}
 
-function tableExercise(l,rule,guided,zone,finish,inv){const [a,b]=rule,cols=colsFor(l);let tries=0,helps=0,hint=0;
- const card=el('',zone);card.className='card';card.appendChild(consigne(inv?'Utilise la règle pour trouver les nombres de départ qui manquent.':'Utilise la règle pour remplir le tableau.'));
- el(ruleCard(l,rule)+(inv?invTable(l,cols,rule,(c,i)=>`<input class="tm" inputmode="numeric" aria-label="${heads(l)[0]} pour ${heads(l)[1]} ${a*c+b}">`):valueTable(l,cols,(c,i)=>`<input class="tm" inputmode="numeric" aria-label="${heads(l)[1]} pour ${heads(l)[0]} ${c}">`)),card);
+function tableExercise(l,m,rule,guided,zone,finish){const [a,b]=rule,cols=TYPE[m]==='pred'?shuffle([...PRED[m].choix]).slice(0,5).sort((x,y)=>x-y):colsFor(l);let tries=0,helps=0,hint=0;
+ const card=el('',zone);card.className='card';card.appendChild(consigne(TYPE[m]==='pred'?'Utilise la règle pour prédire '+(l<3?'les sorties.':'le nombre de tuiles.'):'Utilise la règle pour remplir le tableau.'));
+ el(ruleCard(l,rule)+valueTable(l,cols,(c,i)=>`<input class="tm" inputmode="numeric" aria-label="${heads(l)[1]} pour ${heads(l)[0]} ${c}">`),card);
  const msg=el('',card);msg.className='msg';const row=el('',card);row.className='row';const help=el('',card);help.className='msg';
  const hints=['Remplace '+(l<3?'« Entrée »':'n')+' dans la règle par le nombre en haut de la colonne.',a>1&&b?'Fais d’abord la multiplication, puis l’addition.':a>1?'Pense à tes tables de multiplication.':'Ajoute le nombre de la règle à chaque entrée.',`Pour la première colonne, calcule : ${calc(rule,cols[0])}.`];
- if(inv)hints.splice(0,3,'Travaille à l’envers : tu connais le résultat, cherche le nombre de départ.',a>1&&b?'Annule d’abord l’addition, puis la multiplication.':a>1?'Quelle opération est le contraire de la multiplication ?':'Quelle opération est le contraire de l’addition ?','Essaie un nombre dans la règle et regarde si tu obtiens le résultat.');
  const ok=document.createElement('button');ok.textContent='✔ Vérifier';const hb=document.createElement('button');hb.className='alt';hb.textContent='💡 Indice';row.append(ok,hb);
  hb.onclick=()=>{note(help,'tip',hints[Math.min(hint,2)]);hint++;if(!guided)helps++};
  ok.onclick=()=>{const f=[...card.querySelectorAll('.tm')];if(f.some(x=>x.value.trim()==='')){note(msg,'no','Remplis toutes les cases du tableau.');return}
-  const bad=[];f.forEach((x,i)=>{const good=Number(x.value.trim())===(inv?cols[i]:a*cols[i]+b);x.style.background=good?'#d8f3dc':'#ffe3e0';if(!good)bad.push(i)});
-  if(bad.length){tries++;const i=bad[0],v=Number(f[i].value.trim());note(msg,'no',`${bad.length} case(s) à corriger (en rouge). `+(!inv?`Refais le calcul : ${calc(rule,cols[i])}.`:Number.isFinite(v)?`Vérifions ta réponse ${v} : ${calc(rule,v)} = ${a*v+b}, mais il faut obtenir ${a*cols[i]+b}.`:'Écris seulement des nombres.'));return}
+  const bad=[];f.forEach((x,i)=>{const good=Number(x.value.trim())===a*cols[i]+b;x.style.background=good?'#d8f3dc':'#ffe3e0';if(!good)bad.push(i)});
+  if(bad.length){tries++;const i=bad[0],v=Number(f[i].value.trim());note(msg,'no',`${bad.length} case(s) à corriger (en rouge). Refais le calcul : ${calc(rule,cols[i])}.`);return}
   ok.disabled=true;f.forEach(x=>x.readOnly=true);note(msg,'ok','🎉 Bravo ! Tout le tableau est exact.');finish(tries===0&&helps===0)};
  if(guided){note(help,'tip',hints[0]);hint=1}}
 
@@ -340,7 +338,7 @@ function observe(l,m,zone,k,next){if(TYPE[m]!=='find')return observeTable(l,m,zo
   else if(k<2)mk('Exemple suivant ➜',()=>observe(l,m,zone,k+1,next));else mk('On essaie ➜',next)}
  draw()}
 
-function exercise(l,m,rule,guided,zone,finish){if(TYPE[m]!=='find')return tableExercise(l,rule,guided,zone,finish,TYPE[m]==='inv');const [a,b]=rule;let tries=0,helps=0,hint=0,over=false;
+function exercise(l,m,rule,guided,zone,finish){if(TYPE[m]!=='find')return tableExercise(l,m,rule,guided,zone,finish);const [a,b]=rule;let tries=0,helps=0,hint=0,over=false;
  const card=el('',zone);card.className='card';
  const hints=l<3?['Compare chaque entrée à sa sortie. La même règle fonctionne pour toutes les paires.',
    l===1?'La sortie augmente-t-elle toujours du même nombre ? Sinon, pense à la multiplication.':'Compare deux entrées. Quand l’entrée augmente de 1, de combien augmente la sortie ? C’est le nombre qui multiplie.',
