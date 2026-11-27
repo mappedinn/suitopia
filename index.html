@@ -69,7 +69,7 @@ body{isolation:isolate}body::before{content:"";position:fixed;inset:0;z-index:-1
 main{padding-bottom:max(130px,22vw)!important}
 .rulecard{display:flex;gap:12px;align-items:center;justify-content:center;background:#fff3c4;border:3px solid #ffb703;border-radius:14px;padding:12px;margin:8px 0;font-size:1.2rem}.rulecard svg{width:48px;height:62px;flex:0 0 auto}
 .tm{width:68px;text-align:center}
-.missions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:8px 0}.missions button{padding:6px 2px}.et{display:block;font-size:.75rem;line-height:1}
+.missions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:8px 0}.missions button{padding:6px 2px}.missions.six{grid-template-columns:repeat(6,minmax(0,1fr))}@media(max-width:520px){.missions.six{grid-template-columns:repeat(3,minmax(0,1fr))}}.propre{margin-top:16px;border:3px dashed #ffb703;border-radius:14px;padding:12px;background:#fffaf0}.et{display:block;font-size:.75rem;line-height:1}
 /* Robots animés (en boucle, comme un GIF) */
 #bots{position:fixed;left:0;bottom:0;width:100%;aspect-ratio:1376/768;z-index:-1;pointer-events:none}
 .bot{position:absolute;display:none;transform-origin:50% 100%;animation:botbob 2.2s ease-in-out infinite}
@@ -118,7 +118,10 @@ const $=(s,r=document)=>r.querySelector(s), app=$('#app');
 const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=rnd(0,i);[a[i],a[j]]=[a[j],a[i]]}return a};
 let saved={};try{saved=JSON.parse(localStorage.getItem('suites')||'{}')}catch(e){}
-function total(){$('#stars').textContent='⭐ '+Object.values(saved).reduce((s,v)=>s+v,0)+' / 120'}
+/* Niveaux avec le robot (1 et 2) : 6 missions ; niveaux avec les tuiles : 10 */
+const liste=l=>l<3?[0,2,3,4,6,9]:[0,1,2,3,4,5,6,7,8,9];
+const etoiles=l=>liste(l).reduce((t,m)=>t+(saved[l+'-'+m]||0),0);
+function total(){$('#stars').textContent='⭐ '+[1,2,3,4].reduce((s,l)=>s+etoiles(l),0)+' / '+[1,2,3,4].reduce((s,l)=>s+3*liste(l).length,0)}
 
 const LEVELS=[null,
  {nom:'Niveau 1 : La machine robot',desc:'Je commence : ajouter, puis multiplier',type:'robot',
@@ -254,12 +257,12 @@ new MutationObserver(()=>app.querySelectorAll('.figs:not([data-pret])').forEach(
 const fond=n=>{if(document.body.dataset.bg!=n)document.body.dataset.bg=n};
 function home(){fond(1);app.innerHTML='';el('<div class="card"><h2>Bienvenue !</h2><p>Observe, trouve la règle et crée tes propres suites. Choisis où commencer.</p></div>',app);
  const g=el('',app);g.className='grid';
- LEVELS.slice(1).forEach((L,i)=>{const b=document.createElement('button');b.className='alt lvl';const s=TYPE.map((x,i)=>i).reduce((t,m)=>t+(saved[(i+1)+'-'+m]||0),0);b.innerHTML=`${L.nom}<small>${L.desc}<br>⭐ ${s} / 30</small>`;b.onclick=()=>level(i+1,0);g.appendChild(b)});
+ LEVELS.slice(1).forEach((L,i)=>{const b=document.createElement('button');b.className='alt lvl';const s=etoiles(i+1);b.innerHTML=`${L.nom}<small>${L.desc}<br>⭐ ${s} / ${3*liste(i+1).length}</small>`;b.onclick=()=>level(i+1,0);g.appendChild(b)});
  const b=document.createElement('button');b.className='lvl on';b.innerHTML='🎨 Atelier : Je crée ma suite<small>Des tuiles à déplacer et des défis</small>';b.onclick=atelier;g.appendChild(b);total()}
 
 function level(l,m){fond([0,2,4,3,1][l]);app.innerHTML='';el(`<h2>${LEVELS[l].nom}</h2>`,app);
- const r=el('',app);r.className='row';TYPE.forEach((type,i)=>{const b=document.createElement('button');b.title=NOMS[type];b.className=i===m?'on':'alt';b.innerHTML=`${i+1} ${ICONE[type]}<span class="et">${'★'.repeat(saved[l+'-'+i]||0)||'&nbsp;'}</span>`;b.setAttribute('aria-label','Mission '+(i+1)+' : '+NOMS[type]);b.onclick=()=>level(l,i);r.appendChild(b)});
- r.className='missions';el(`<h3>Mission ${m+1} : ${NOMS[TYPE[m]]}${m===9?' (grand défi)':''}</h3>`,app);const tabs=el('',app);tabs.className='row';const zone=el('',app);
+ const r=el('',app);r.className='row';liste(l).forEach((i,pos)=>{const type=TYPE[i],b=document.createElement('button');b.title=NOMS[type];b.className=i===m?'on':'alt';b.innerHTML=`${pos+1} ${ICONE[type]}<span class="et">${'★'.repeat(saved[l+'-'+i]||0)||'&nbsp;'}</span>`;b.setAttribute('aria-label','Mission '+(pos+1)+' : '+NOMS[type]);b.onclick=()=>level(l,i);r.appendChild(b)});
+ r.className=l<3?'missions six':'missions';el(`<h3>Mission ${liste(l).indexOf(m)+1} : ${NOMS[TYPE[m]]}${m===9?' (grand défi)':''}</h3>`,app);const tabs=el('',app);tabs.className='row';const zone=el('',app);
  let list=shuffle(pool(l,m)).slice(0,7),first=0,done=new Set();
  ['1. J’observe','2. On essaie','3. À moi'].forEach((t,i)=>{const b=document.createElement('button');b.className='alt';b.textContent=t;b.onclick=()=>go(i,0);tabs.appendChild(b)});
  function go(phase,k){[...tabs.children].forEach((b,i)=>b.className=i===phase?'on':'alt');zone.innerHTML='';
@@ -278,6 +281,24 @@ function level(l,m){fond([0,2,4,3,1][l]);app.innerHTML='';el(`<h2>${LEVELS[l].no
   })}
  go(0,0)}
 
+function maPropreEntree(parent,rule,interdits){const [a,b]=rule;
+ const d=el('<h3 style="margin-top:0">➕ Ajoute ta propre entrée</h3><div class="row"><span>Mon entrée :</span><input class="num mienne" inputmode="numeric" aria-label="Mon entrée"><button type="button">▶ Envoyer au robot</button></div>',parent);d.className='propre';
+ const msg=el('',d),zone=el('',d),champ=$('.mienne',d),envoyer=$('button',d);msg.className='msg';
+ const permis=n=>!interdits().includes(n);
+ function go(){zone.innerHTML='';msg.className='msg';msg.textContent='';const t=champ.value.trim(),n=Number(t);
+  if(!/^\d+$/.test(t)||n>100){note(msg,'no','Écris un nombre entier de 0 à 100.');return}
+  if(!permis(n)){note(msg,'no','Cette entrée est déjà dans ta question. Choisis un autre nombre.');return}
+  const mach=el(machine([[n,null]]),zone),rep_=$('.answer',mach),sortie=$('.ball.out',mach);rep_.setAttribute('aria-label','Ma sortie pour mon entrée');animate(mach);
+  const row=el('',zone);row.className='row';const v=document.createElement('button');v.textContent='✔ Vérifier ma sortie';row.appendChild(v);let essais=0;
+  note(msg,'tip','Quelle sortie le robot va-t-il donner ? Écris-la, puis vérifie.');
+  v.onclick=()=>{if(!permis(n)){zone.innerHTML='';note(msg,'no','Cette entrée est déjà dans ta question. Choisis un autre nombre.');return}
+   const r=rep_.value.trim();if(!/^\d+$/.test(r)){note(msg,'no','Écris ta sortie avec un nombre.');return}
+   const bon=a*n+b,juste=Number(r)===bon;if(!juste)essais++;
+   if(!juste&&essais<2){note(msg,'no','Pas encore. Vérifie ton calcul et réessaie.');return}
+   v.disabled=true;rep_.value=bon;rep_.readOnly=true;sortie.textContent=bon;animate(mach);
+   note(msg,juste?'ok':'tip',juste?`🎉 Bravo ! Pour l’entrée ${n}, le robot donne ${bon}.`:`Pour l’entrée ${n}, le robot donne ${bon}. Observe bien, puis essaie une autre entrée.`)}}
+ envoyer.onclick=go;champ.onkeydown=e=>{if(e.key==='Enter')go()};champ.oninput=()=>{zone.innerHTML='';msg.className='msg';msg.textContent=''}}
+
 const colsFor=l=>l<3?shuffle([1,2,3,4,5,6,7,8,9]).slice(0,4).sort((x,y)=>x-y).concat(10):l===3?[1,2,3,4,10]:[1,3,5,10,20];
 const heads=l=>l<3?['Entrée','Sortie']:['Figure','Tuiles'];
 const shownRule=(l,[a,b])=>(l<3?'Sortie = ':'Tuiles = ')+op(a,b,l<3?'Entrée':'n');
@@ -292,7 +313,7 @@ function observeTable(l,m,zone,k,next){zone.innerHTML='';const pred=TYPE[m]==='p
   const mk=(label,f,cls)=>{const y=document.createElement('button');y.textContent=label;y.onclick=f;y.className=cls||'';nav.appendChild(y)};
   mk('↺ Revoir',()=>{step=0;draw()},'alt');
   if(step<cols.length)mk('Suivant ➜',()=>{step++;draw()});else if(k<2)mk('Exemple suivant ➜',()=>observeTable(l,m,zone,k+1,next));else mk('On essaie ➜',next)}
- draw()}
+ draw();if(l<3)maPropreEntree(el('',zone),rule,()=>[])}
 
 function tableExercise(l,m,rule,guided,zone,finish){const [a,b]=rule,cols=TYPE[m]==='pred'?shuffle([...PRED[m].choix]).slice(0,5).sort((x,y)=>x-y):colsFor(l);let tries=0,helps=0,hint=0;
  const card=el('',zone);card.className='card';card.appendChild(consigne(TYPE[m]==='pred'?'Utilise la règle pour prédire '+(l<3?'les sorties.':'le nombre de tuiles.'):'Utilise la règle pour remplir le tableau.'));
@@ -305,7 +326,8 @@ function tableExercise(l,m,rule,guided,zone,finish){const [a,b]=rule,cols=TYPE[m
   const bad=[];f.forEach((x,i)=>{const good=Number(x.value.trim())===a*cols[i]+b;x.style.background=good?'#d8f3dc':'#ffe3e0';if(!good)bad.push(i)});
   if(bad.length){tries++;const i=bad[0],v=Number(f[i].value.trim());note(msg,'no',`${bad.length} case(s) à corriger (en rouge). Refais le calcul : ${calc(rule,cols[i])}.`);return}
   ok.disabled=true;f.forEach(x=>x.readOnly=true);note(msg,'ok','🎉 Bravo ! Tout le tableau est exact.');finish(tries===0&&helps===0)};
- if(guided){note(help,'tip',hints[0]);hint=1}}
+ if(guided){note(help,'tip',hints[0]);hint=1}
+ if(l<3)maPropreEntree(card,rule,()=>ok.disabled?[]:cols)}
 
 function observe(l,m,zone,k,next){if(TYPE[m]!=='find')return observeTable(l,m,zone,k,next);zone.innerHTML='';const rule=LEVELS[l].ex[m][k],[a,b]=rule;let step=0;
  el(`<h3>Exemple ${k+1} de 3</h3>`,zone);const view=el('',zone),txt=el('',zone),nav=el('',zone);nav.className='row';
@@ -336,7 +358,7 @@ function observe(l,m,zone,k,next){if(TYPE[m]!=='find')return observeTable(l,m,zo
   mk('↺ Revoir',()=>{step=0;draw();if(l<3)animate(view)},'alt');
   if(step<steps.length-1)mk('Suivant ➜',()=>{step++;draw();if(l<3&&step===3)animate(view)});
   else if(k<2)mk('Exemple suivant ➜',()=>observe(l,m,zone,k+1,next));else mk('On essaie ➜',next)}
- draw()}
+ draw();if(l<3)maPropreEntree(el('',zone),rule,()=>[])}
 
 function exercise(l,m,rule,guided,zone,finish){if(TYPE[m]!=='find')return tableExercise(l,m,rule,guided,zone,finish);const [a,b]=rule;let tries=0,helps=0,hint=0,over=false;
  const card=el('',zone);card.className='card';
@@ -366,6 +388,7 @@ function exercise(l,m,rule,guided,zone,finish){if(TYPE[m]!=='find')return tableE
    if(!sameRule(f,rule)){tries++;note(R.msg,'no','Ta règle ne fonctionne pas pour toutes les entrées. Essaie une règle plus simple.');return}
    if(+out.value!==a*ins[3]+b){tries++;note(R.msg,'no',`Ta règle est bonne ! Applique-la à l’entrée ${ins[3]} pour corriger la sortie.`);return}
    over=true;ok.disabled=true;note(R.msg,'ok',`${win()} ${ruleText(l,rule)}`);const last=card.querySelectorAll('.lane')[3];$('.ball.out',last).textContent=out.value;last.classList.remove('run');last.parentNode.style.setProperty('--d','0s');void last.offsetWidth;last.classList.add('run');finish(tries===0&&helps===0)};
+  maPropreEntree(card,rule,()=>over?[]:[ins[3]]);
  }else{
   const view=el(figures(l,m,rule,false),card);
   card.insertBefore(consigne('Étape 1 : construis la figure 4. Choisis une couleur, puis clique sur les cases. Clique encore pour retirer une tuile.'),view);
